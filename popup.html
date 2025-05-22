@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        padding: 16px;
+        background: linear-gradient(to bottom, #1e1e1e, #2b2b2b);
+        color: #f0f0f0;
+        width: 260px;
+        border-radius: 10px;
+      }
+
+      .section {
+        margin-bottom: 16px;
+        font-weight: bold;
+        font-size: 15px;
+        color: #90caf9;
+      }
+
+      label {
+        display: flex;
+        align-items: center;
+        margin: 6px 0;
+        font-size: 14px;
+        cursor: pointer;
+        gap: 8px;
+      }
+
+      input[type="checkbox"] {
+        accent-color: #2196f3;
+        width: 16px;
+        height: 16px;
+      }
+
+      button {
+        width: 100%;
+        padding: 10px;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        cursor: pointer;
+        margin-top: 10px;
+        transition: background 0.3s ease;
+      }
+
+      #toggleBtn {
+        background: #4caf50;
+        color: white;
+      }
+
+      #toggleBtn.off {
+        background: #d32f2f;
+      }
+
+      #toggleBtn:hover {
+        filter: brightness(1.1);
+      }
+
+      #applyBtn {
+        background: #424242;
+        color: white;
+      }
+
+      #applyBtn:hover {
+        background: #616161;
+      }
+
+      #status {
+        font-size: 14px;
+        margin-bottom: 8px;
+        color: #cfd8dc;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="section" id="status">Сниффер: 🕒 ...</div>
+    <button id="toggleBtn">Загрузка...</button>
+
+    <div class="section">Фильтры:</div>
+    <label
+      ><input type="checkbox" value="mode_all_1000" class="modeCheckbox" />🟩
+      Все от 1000 юаней</label
+    >
+    <label
+      ><input
+        type="checkbox"
+        value="mode_half_700_1000"
+        class="modeCheckbox"
+      />🌓 700–1000 через одну</label
+    >
+    <label
+      ><input
+        type="checkbox"
+        value="mode_third_under_700"
+        class="modeCheckbox"
+      />🌒 До 700 через две</label
+    >
+    <label
+      ><input type="checkbox" value="mode_3" class="modeCheckbox" />🌐 Всё
+      подряд</label
+    >
+
+    <button id="applyBtn">Применить</button>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

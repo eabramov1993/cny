@@ -1,4 +1,18 @@
 (() => {
+  let cachedSnifferModes = JSON.parse(localStorage.getItem("sniffer_modes") || "[]");
+  let cachedToken = localStorage.getItem("token");
+
+  window.addEventListener('storage', (event) => {
+    if (event.key === "sniffer_modes") {
+      cachedSnifferModes = JSON.parse(event.newValue || "[]");
+      console.log("🔄 Режимы сниффера обновлены:", cachedSnifferModes.map((m) => stats[m]?.label || m));
+    }
+    if (event.key === "token") {
+      cachedToken = event.newValue;
+      console.log("🔄 Токен обновлен.");
+    }
+  });
+
   if (localStorage.getItem("sniffer_enabled") === "false") {
     console.log("🔕 Сниффер отключён");
     return;
@@ -65,6 +79,25 @@
     mode_3: { accepted: 0, skipped: 0, label: "🌐 Все сделки (без фильтра)" },
   };
 
+  const filterModeConfigs = [
+    {
+      name: "mode_all_1000",
+      condition: (payout) => payout >= 1000,
+    },
+    {
+      name: "mode_half_700_1000",
+      condition: (payout) => payout >= 700 && payout < 1000,
+    },
+    {
+      name: "mode_third_under_700",
+      condition: (payout) => payout < 700,
+    },
+    {
+      name: "mode_3", // Accept all
+      condition: () => true,
+    },
+  ];
+
   function logStatistics() {
     console.log("📊 Статистика по режимам:");
     for (const [mode, data] of Object.entries(stats)) {
@@ -88,9 +121,10 @@
       const payout = data.payload?.out?.client || 0;
       if (!dealId) return;
 
-      let modes = JSON.parse(localStorage.getItem("sniffer_modes") || "[]");
+      let modes = cachedSnifferModes;
       if (modes.length === 0) {
         modes = ["mode_3"];
+        // Update local storage which will trigger the storage event to update cachedSnifferModes
         localStorage.setItem("sniffer_modes", JSON.stringify(modes));
         console.log(
           "⚙️ Фильтр не задан — активирован режим: 🌐 Все сделки (без фильтра)"
@@ -100,33 +134,14 @@
       let shouldAccept = false;
       let matchedMode = null;
 
-      if (modes.includes("mode_all_1000") && payout >= 1000) {
-        shouldAccept = true;
-        matchedMode = "mode_all_1000";
-      }
-
-      if (
-        !shouldAccept &&
-        modes.includes("mode_half_700_1000") &&
-        payout >= 700 &&
-        payout < 1000
-      ) {
-        shouldAccept = true;
-        matchedMode = "mode_half_700_1000";
-      }
-
-      if (
-        !shouldAccept &&
-        modes.includes("mode_third_under_700") &&
-        payout < 700
-      ) {
-        shouldAccept = true;
-        matchedMode = "mode_third_under_700";
-      }
-
-      if (!shouldAccept && modes.includes("mode_3")) {
-        shouldAccept = true;
-        matchedMode = "mode_3";
+      for (const modeConfig of filterModeConfigs) {
+        if (modes.includes(modeConfig.name)) {
+          if (modeConfig.condition(payout)) {
+            shouldAccept = true;
+            matchedMode = modeConfig.name;
+            break; // Priority is determined by order in filterModeConfigs
+          }
+        }
       }
 
       if (!shouldAccept || !matchedMode) {
@@ -136,17 +151,20 @@
         return;
       }
 
-      const token = localStorage.getItem("token");
+      const token = cachedToken;
       if (!token) return;
 
-      fetch("https://my.prod.platcore.io/api/auction-deals/accept", {
+      const url = "https://my.prod.platcore.io/api/auction-deals/accept";
+      const options = {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ dealId }),
-      })
+      };
+
+      sendWithRetry(url, options)
         .then(async (res) => {
           if (res.status === 201) {
             stats[matchedMode].accepted++;
@@ -193,10 +211,10 @@
   window.WebSocket = SniffedWebSocket;
 
   console.log("🧲 WebSocket-сниффер активирован с автофильтрацией");
-  const activeModes = JSON.parse(localStorage.getItem("sniffer_modes") || "[]");
+  // Use cached modes for initial log
   console.log(
     "⚙️ Активные режимы:",
-    activeModes.map((m) => stats[m]?.label || m)
+    cachedSnifferModes.map((m) => stats[m]?.label || m)
   );
 })();
 
